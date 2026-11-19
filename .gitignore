@@ -1,0 +1,9 @@
+.DS_Store
+node_modules/
+.env
+.env.*
+!.env.example
+web/playwright-report/
+web/test-results/
+web/reports/
+web/.features-gen/**/*.spec.js

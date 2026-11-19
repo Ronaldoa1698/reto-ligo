@@ -1,0 +1,62 @@
+name: Web - Playwright
+
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - '.github/workflows/web.yml'
+  push:
+    branches: [main, master]
+    paths:
+      - 'web/**'
+      - '.github/workflows/web.yml'
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    env:
+      SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
+      SAUCE_PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: web/.nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check TypeScript
+        run: pnpm run typecheck
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run smoke on pull requests
+        if: github.event_name == 'pull_request'
+        run: pnpm run test:smoke
+      - name: Run regression on merge, nightly or manual execution
+        if: github.event_name != 'pull_request'
+        run: pnpm run test:regression
+      - name: Upload reports and failure evidence
+        if: ${{ always() && !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-playwright-${{ github.run_attempt }}
+          path: |
+            web/playwright-report/
+            web/test-results/
+            web/reports/
+          retention-days: 7
+          if-no-files-found: ignore
