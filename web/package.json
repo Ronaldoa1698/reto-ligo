@@ -1,0 +1,30 @@
+{
+  "name": "ligo-web-tests",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.14.0",
+  "description": "Automatización Web de SauceDemo para el reto QA de Ligo",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "bdd:generate": "bddgen",
+    "test": "bddgen && playwright test",
+    "test:smoke": "bddgen && playwright test --grep @smoke",
+    "test:regression": "bddgen && playwright test --grep @regression",
+    "test:headed": "bddgen && playwright test --headed",
+    "test:ui": "bddgen && playwright test --ui",
+    "test:debug": "bddgen && playwright test --debug",
+    "test:list": "bddgen && playwright test --list",
+    "typecheck": "tsc --noEmit",
+    "browsers:install": "playwright install chromium",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@types/node": "24.19.2",
+    "playwright-bdd": "9.2.1",
+    "typescript": "7.0.2"
+  }
+}
