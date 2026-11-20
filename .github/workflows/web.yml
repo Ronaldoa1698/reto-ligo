@@ -13,6 +13,12 @@ on:
   schedule:
     - cron: '0 8 * * *'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag a ejecutar, incluyendo @ (ej.: @purchase, @smoke o @regression)'
+        required: true
+        default: '@regression'
+        type: string
 
 permissions:
   contents: read
@@ -46,9 +52,19 @@ jobs:
       - name: Run smoke on pull requests
         if: github.event_name == 'pull_request'
         run: pnpm run test:smoke
-      - name: Run regression on merge, nightly or manual execution
-        if: github.event_name != 'pull_request'
+      - name: Run regression on push or nightly execution
+        if: github.event_name == 'push' || github.event_name == 'schedule'
         run: pnpm run test:regression
+      - name: Run manual tests by tag
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TEST_TAG: ${{ inputs.tag }}
+        run: |
+          if [[ ! "$TEST_TAG" =~ ^@[A-Za-z0-9_-]+$ ]]; then
+            echo 'Indica un único tag con @, letras, números, guiones o guiones bajos.'
+            exit 1
+          fi
+          pnpm test --grep "(^| )${TEST_TAG}( |$)"
       - name: Upload reports and failure evidence
         if: ${{ always() && !cancelled() }}
         uses: actions/upload-artifact@v7

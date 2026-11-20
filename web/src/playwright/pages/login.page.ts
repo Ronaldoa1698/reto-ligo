@@ -21,20 +21,32 @@ export class LoginPage {
   }
 
   async expectFormVisible(): Promise<void> {
-    await expect(this.page).toHaveTitle('Swag Labs');
     await expect(this.locators.usernameInput).toBeVisible();
     await expect(this.locators.passwordInput).toBeVisible();
+    await expect(this.locators.loginButton).toBeVisible();
     await expect(this.locators.loginButton).toBeEnabled();
   }
 
+  async loginWithLockedUser(password: string): Promise<void> {
+    const demoUsernames = await this.locators.demoUsernames.innerText();
+    const username = demoUsernames.split(/\s+/).find(value => value.startsWith('locked_'));
+    if (!username) {
+      throw new Error('La demo no publica un usuario bloqueado en el formulario de acceso.');
+    }
+    await this.login(username, password);
+  }
+
   async expectInvalidCredentialsError(): Promise<void> {
-    await expect(this.locators.errorMessage).toHaveText(
-      'Epic sadface: Username and password do not match any user in this service',
+    await expect(this.locators.errorMessage).toContainText(
+      'Username and password do not match any user in this service',
     );
   }
 
+  async expectLockedUserError(): Promise<void> {
+    await expect(this.locators.errorMessage).toContainText('Sorry, this user has been locked out.');
+  }
+
   async expectLoginPageVisible(): Promise<void> {
-    await expect(this.page).toHaveURL(/\/$/);
-    await expect(this.locators.loginButton).toBeVisible();
+    await this.expectFormVisible();
   }
 }

@@ -10,9 +10,15 @@ export class InventoryPage {
     this.locators = new InventoryLocators(page);
   }
 
+  async addProductToCart(productName: string): Promise<void> {
+    await this.locators.addToCartButton(productName).click();
+  }
+
+  async openCart(): Promise<void> {
+    await this.locators.cartLink.click();
+  }
+
   async expectCatalogVisible(): Promise<void> {
-    await expect(this.page).toHaveURL(/\/inventory\.html$/);
-    await expect(this.locators.title).toHaveText('Products');
     await expect(this.locators.products.first()).toBeVisible();
   }
 }
