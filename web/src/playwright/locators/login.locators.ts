@@ -5,11 +5,13 @@ export class LoginLocators {
   readonly passwordInput: Locator;
   readonly loginButton: Locator;
   readonly errorMessage: Locator;
+  readonly demoUsernames: Locator;
 
   constructor(page: Page) {
     this.usernameInput = page.getByTestId('username');
     this.passwordInput = page.getByTestId('password');
     this.loginButton = page.getByRole('button', { name: 'Login', exact: true });
     this.errorMessage = page.getByTestId('error');
+    this.demoUsernames = page.locator('#login_credentials');
   }
 }

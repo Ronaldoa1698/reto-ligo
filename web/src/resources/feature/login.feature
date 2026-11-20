@@ -1,5 +1,5 @@
 # language: en
-@regression
+@regression @login
   Feature: Login de SauceDemo
 
   Background:
@@ -17,4 +17,9 @@
   Scenario: WEB-LOGIN-03: rechaza credenciales inválidas
     When intento iniciar sesión con credenciales inválidas
     Then se informa que las credenciales son incorrectas
+    And permanezco en la página de acceso
+
+  Scenario: WEB-LOGIN-04: rechaza el acceso de un usuario bloqueado
+    When intento iniciar sesión con un usuario bloqueado
+    Then se informa que el usuario está bloqueado
     And permanezco en la página de acceso
