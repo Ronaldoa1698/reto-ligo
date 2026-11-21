@@ -39,7 +39,7 @@ La primera ejecución descarga las dependencias. Las siguientes reutilizan la ca
 # Toda la regresión
 mvn test
 
-# Ciclo completo de reserva
+# Smoke: ciclo completo y protección de PUT / DELETE
 mvn test -Dapi.tags=@smoke
 
 # Solo autenticación inválida; no requiere credenciales válidas
@@ -62,7 +62,7 @@ El runner acepta un único tag por ejecución. Un tag inválido o sin escenarios
 
 | Tag | Ejecuciones actuales |
 | --- | --- |
-| `@smoke` | 1: ciclo completo API-01 |
+| `@smoke` | 5: API-01 y los cuatro ejemplos de API-04 / API-05 |
 | `@patch` | 1: actualización parcial API-02 |
 | `@auth`, `@credencialesInvalidas` | 1 por selección: credenciales inválidas API-03 |
 | `@authorization` | 4: dos ejemplos de API-04 y dos de API-05 |
@@ -116,7 +116,7 @@ Los casos conservan IDs estables. La columna Automatizado describe la implementa
 | ID | Escenario / resultado esperado | Prioridad | Técnica | Automatizado |
 | --- | --- | --- | --- | --- |
 | API-01 | Credenciales válidas permiten crear una reserva, consultar sus datos, actualizarlos y eliminarla; las consultas posteriores reflejan cada cambio | P0 | Transición de estados y partición de equivalencia válida | Sí |
-| API-02 | Actualizar un campo mediante PATCH conserva los campos no enviados y persiste el cambio | P1 | Transición de estados y comparación antes/después | Sí |
+| API-02 | Actualizar un campo mediante PATCH conserva los campos no enviados y persiste el cambio | P1 | Transición de estados | Sí |
 | API-03 | Credenciales inválidas devuelven `Bad credentials` sin emitir un token | P1 | Partición de equivalencia inválida | Sí |
 | API-04 | PUT sin token o con token inválido rechaza la operación y conserva la reserva original; dos ejemplos | P0 | Tabla de decisión, partición inválida y Data Driven Testing | Sí |
 | API-05 | DELETE sin token o con token inválido rechaza la operación y mantiene la reserva disponible; dos ejemplos | P0 | Tabla de decisión, partición inválida y Data Driven Testing | Sí |
@@ -128,7 +128,7 @@ API-01 recorre los estados inexistente → creada → actualizada → eliminada.
 
 API-03 representa la partición de credenciales inválidas y complementa la partición válida usada en API-01. Aporta una comprobación negativa pequeña e independiente. No cubre todas las combinaciones de usuario y contraseña ni demuestra que PUT y DELETE apliquen correctamente la autorización.
 
-API-02 envía únicamente `lastname` en el PATCH y compara la respuesta completa y un GET posterior contra una copia del payload original con ese único cambio. Así detecta tanto la falta de persistencia como la pérdida o alteración de los campos omitidos.
+API-02 envía únicamente `lastname` en el PATCH y compara la respuesta completa y un GET posterior contra una copia del payload original con ese único cambio. La comparación antes/después es el oráculo de la transición: detecta tanto la falta de persistencia como la pérdida o alteración de los campos omitidos.
 
 API-04 y API-05 cubren dos particiones de autorización mediante Data Driven Testing: token ausente y token inválido. Cada fila de `Examples` crea su propia reserva y ejecuta su propia limpieza. PUT intenta cambiar datos para que un GET posterior detecte una modificación indebida. DELETE comprueba con un GET que la reserva continúa existiendo y conserva todos sus valores.
 
@@ -151,8 +151,8 @@ Data Driven Testing se aplica a las variantes de autorización, con dos ejemplos
 | Autenticación válida | HTTP 200 y un token de tipo string no vacío; el helper exige credenciales del entorno |
 | Creación | HTTP 200, respuesta JSON, ID numérico positivo y reserva con el esquema y valores enviados |
 | Consulta tras crear | HTTP 200, respuesta JSON y contenido completo igual al payload original |
-| Actualización completa | HTTP 200; `lastname`, `totalprice` y `depositpaid` cambian a los valores enviados; los demás campos se conservan |
-| Consulta tras actualizar | HTTP 200 y contenido completo igual al payload actualizado, incluido `depositpaid: false` |
+| Actualización completa | HTTP 200, respuesta JSON y esquema; `lastname`, `totalprice` y `depositpaid` cambian a los valores enviados; los demás campos se conservan |
+| Consulta tras actualizar | HTTP 200, respuesta JSON y contenido completo igual al payload actualizado, incluido `depositpaid: false` |
 | Actualización parcial | PATCH con un único campo; HTTP 200, respuesta JSON, esquema y comparación completa con el cambio esperado; GET posterior con los mismos valores |
 | Actualización sin autorización | PUT sin token y con token inválido: HTTP 403; GET posterior 200, respuesta JSON, esquema y contenido original completo |
 | Eliminación sin autorización | DELETE sin token y con token inválido: HTTP 403; GET posterior 200, respuesta JSON, esquema y contenido original completo |
@@ -214,15 +214,17 @@ El [workflow API](../.github/workflows/api.yml) requiere los secretos de Actions
 
 | Evento | Selección | Criterio |
 | --- | --- | --- |
-| Pull request con cambios en API o su workflow | `@smoke`: API-01 | Detectar pronto si se rompe el flujo principal antes de integrar |
+| Pull request con cambios en API o su workflow | `@smoke`: API-01, API-04 y API-05; cinco ejecuciones | Proteger el ciclo principal y el rechazo de cambios no autorizados, todos P0 |
 | Push a `main`/`master`, incluido el merge | `@regression`: API-01 a API-05, siete ejecuciones | Comprobar los casos actuales sobre el código integrado |
 | Nightly a las 03:00 de Lima, 08:00 UTC | `@regression`: API-01 a API-05, siete ejecuciones | Detectar cambios o indisponibilidad del servicio entre entregas |
 | Manual | Un tag indicado en `tag` | Ejecutar una selección para diagnóstico o validación puntual |
 
-Smoke contiene el recorrido completo API-01. Regresión lo complementa con PATCH, credenciales inválidas y las cuatro variantes negativas de autorización. Los nuevos casos conservan `@regression`, por lo que el workflow los incorpora sin cambiar el comando de ejecución.
+Smoke contiene los casos P0: el recorrido completo API-01 y las cuatro variantes negativas de autorización de API-04 / API-05. Regresión añade PATCH y credenciales inválidas. Cada variante conserva su propia reserva y limpieza; la selección más amplia no introduce dependencias entre casos.
 
 Con el workflow publicado en la rama predeterminada, abrir **Actions → API - Karate → Run workflow**, elegir la rama e indicar `@smoke`, `@booking`, `@patch`, `@authorization`, `@auth`, `@credencialesInvalidas` o `@regression`. Los dos tags de autenticación seleccionan actualmente API-03. El runner valida el tag y falla si no hay coincidencias.
 
-Los reportes se suben como artefactos incluso si la suite falla y se conservan siete días. La validación remota de esta versión queda pendiente de publicar el PR. Al ejecutarse, revisar el resultado del job y descargar el artefacto `api-karate-<intento>` para comprobar el HTML y los XML. El horario nocturno se activa al publicar el workflow en la rama predeterminada y GitHub puede iniciar el trabajo con retraso.
+Los reportes se suben como artefactos incluso si la suite falla y se conservan siete días. Descarga `api-karate-<intento>` para comprobar el HTML y los XML y conserva el de la entrega antes de que expire. GitHub puede iniciar el trabajo nocturno con retraso.
+
+La [regresión nocturna correcta](https://github.com/Ronaldoa1698/reto-ligo/actions/runs/44921544070) corresponde al commit `b162626c8c65ecaf7fe779447f67df4aded1ee18` y sus siete ejecuciones. La ampliación de Smoke a cinco ejecuciones y las verificaciones adicionales de Content-Type requieren una nueva ejecución del código actualizado; ese resultado anterior no las acredita.
 
 Referencias: [instalación de Karate v2](https://docs.karatelabs.io/getting-started/install-dependencies/), [logging y enmascaramiento](https://docs.karatelabs.io/running-tests/logging/), [contrato Restful Booker](https://restful-booker.herokuapp.com/apidoc/index.html).

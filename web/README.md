@@ -95,6 +95,8 @@ El objetivo es proteger el flujo Login → Productos → Carrito → Checkout �
 | R-WEB-06: checkout avanza con datos obligatorios incompletos | Medio / P1 | WEB-CHECKOUT-01: tres ejemplos independientes |
 | R-WEB-07: la compra no termina o deja productos en el carrito | Alto / P0 | WEB-PURCHASE-01: confirmación y carrito vacío |
 
+La prioridad del riesgo indica su impacto; la del caso indica el orden de ejecución. Para R-WEB-01, el acceso válido es P0 porque demuestra que el comprador puede entrar. La disponibilidad del formulario es una comprobación complementaria P1, incluida en Smoke por su bajo costo.
+
 ## Diseño de pruebas
 
 Se conservan los IDs en los nombres de escenario para relacionarlos con los resultados. La selección incluye los casos automatizados y las exclusiones, con el formato pedido por el reto.
@@ -117,11 +119,13 @@ El login y la compra completa detectan interrupciones P0. El negativo de credenc
 
 ### Tabla de decisión de acceso
 
-| Datos / estado de la cuenta | Resultado esperado | Caso |
-| --- | --- | --- |
-| Usuario válido activo y contraseña válida | Catálogo visible | WEB-LOGIN-02 |
-| Credenciales inválidas | Error de credenciales y formulario disponible | WEB-LOGIN-03 |
-| Usuario bloqueado y contraseña válida de la demo | Error de bloqueo y formulario disponible | WEB-LOGIN-04 |
+| Usuario / estado de la cuenta | Contraseña | Resultado esperado | Caso |
+| --- | --- | --- | --- |
+| Usuario válido activo | Válida | Catálogo visible | WEB-LOGIN-02 |
+| Usuario inexistente | Inválida | Error de credenciales y formulario disponible | WEB-LOGIN-03 |
+| Usuario bloqueado | Válida de la demo | Error de bloqueo y formulario disponible | WEB-LOGIN-04 |
+
+Son las combinaciones seleccionadas; no se prueban por separado usuario activo con contraseña incorrecta ni usuario inexistente con contraseña válida.
 
 ### Datos de checkout
 
@@ -143,7 +147,7 @@ Firefox/WebKit, regresión visual, accesibilidad completa, carga y seguridad exh
 
 ## Matriz de trazabilidad
 
-Cada nombre de test generado conserva su ID y, en checkout, el campo del ejemplo. El reporte y [el resumen de ejecución](evidence/validation.json) permiten identificar el resultado de cada uno.
+Cada nombre de test generado conserva su ID y, en checkout, el campo del ejemplo. Los reportes HTML y JUnit permiten identificar el resultado de cada uno.
 
 | Requerimiento / flujo | Riesgo | Caso | Fuente automatizada | Page / verificación principal |
 | --- | --- | --- | --- | --- |
@@ -199,7 +203,7 @@ web/
 │           ├── cart.feature
 │           ├── checkout.feature
 │           └── purchase.feature
-├── evidence/                          # Resumen de validación y captura de confirmación
+├── evidence/                          # Captura de confirmación seleccionada
 ├── .features-gen/                     # Tests generados; no se editan manualmente
 ├── playwright.config.ts               # Configuración BDD y del runner de Playwright
 ├── tsconfig.json                      # Comprobación estricta de tipos
@@ -234,7 +238,7 @@ Después de ejecutar:
 
 Los reportes, logs y traces completos están excluidos de Git. Los artefactos de ejecución pueden contener datos de sesión; deben revisarse antes de compartirlos. Si SauceDemo no está disponible, conserva el reporte y documenta la indisponibilidad; no cambies las aserciones para ocultarla.
 
-Se conserva en `evidence/` un [resumen estructurado de la validación](evidence/validation.json) y la [captura de confirmación](evidence/purchase-confirmation.png). Los reportes HTML/JUnit, logs y traces completos permanecen fuera de Git. El resumen registra los resultados reales de la última validación y distingue esa ejecución local de las ejecuciones remotas anteriores.
+Se conserva en `evidence/` la [captura de confirmación](evidence/purchase-confirmation.png). Los reportes HTML/JUnit, logs y traces completos permanecen fuera de Git y se consultan en los artefactos de la ejecución correspondiente de Actions.
 
 Para regenerar una evidencia detallada con la configuración de CI:
 
@@ -270,13 +274,11 @@ El campo acepta un único tag con `@`, letras, números, guiones o guiones bajos
 
 Configura los secrets de Actions `SAUCE_USERNAME` y `SAUCE_PASSWORD` en el repositorio. Sin ellos, el acceso positivo falla con el mensaje de configuración. GitHub no entrega estos secrets a pull requests de forks; esa ejecución requiere una estrategia adicional si se habilitan contribuciones externas.
 
-Los reportes y evidencias disponibles se suben incluso si los tests fallan y se conservan durante siete días. El workflow queda preparado en código; su ejecución remota requiere subir el repositorio y configurar los secrets.
+Los reportes y evidencias disponibles se suben incluso si los tests fallan y se conservan durante siete días. Para la entrega, conserva el artefacto de la ejecución que corresponde al commit evaluado antes de que expire.
 
 ### Validación remota y publicación
 
-Se comprobaron una [ejecución de PR correcta](https://github.com/Ronaldoa1698/reto-ligo/actions/runs/44633176290) y una [ejecución de push correcta](https://github.com/Ronaldoa1698/reto-ligo/actions/runs/44634665489) del código previamente publicado. También se verificó la existencia de los secrets `SAUCE_USERNAME` y `SAUCE_PASSWORD`, sin consultar sus valores.
-
-La ampliación actual de 9 pruebas, los filtros manuales y el horario restaurado se validaron localmente y requieren publicación para obtener una ejecución remota de esta misma versión. Después de publicar, revisar PR, push y una ejecución manual con `@checkout` o `@purchase`; confirmar sus resultados y descargar sus artefactos. La ejecución nocturna se verificará cuando GitHub procese el horario de la rama predeterminada.
+La [regresión nocturna correcta](https://github.com/Ronaldoa1698/reto-ligo/actions/runs/44920750246) corresponde al commit `b162626c8c65ecaf7fe779447f67df4aded1ee18` e incluye las nueve ejecuciones. Actions vincula el resultado, el commit y sus artefactos. Los cambios posteriores requieren su propia ejecución para acreditar esa versión.
 
 ## Decisiones técnicas para la presentación
 
@@ -296,7 +298,7 @@ El PDF pide un video global de 10–15 minutos para Web, API y Mobile. Para la s
 2. Un feature y su relación con steps, fixtures, Pages y locators.
 3. La compra y un ejemplo negativo de checkout; explicar que cada ejemplo se prepara de forma independiente.
 4. La captura de confirmación, el reporte y cómo abrir un trace.
-5. El workflow de PR, push, nightly y ejecución manual por tag; distinguir las ejecuciones remotas anteriores de los cambios aún pendientes de publicar.
+5. El workflow de PR, push, nightly y ejecución manual por tag; identificar el commit y los artefactos de la ejecución mostrada.
 6. La estrategia de datos, el control de flaky tests y una mejora V2.
 
 Para mostrar la secuencia de compra con controles de avance manual, usar `pnpm run test:debug --grep WEB-PURCHASE-01`. La grabación de la presentación global queda pendiente de realizar junto con las otras dos capas; los traces y la captura son evidencias de ejecución, no sustituyen esa explicación.

@@ -1,8 +1,5 @@
-import { $, browser, expect } from '@wdio/globals';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import allure from '@wdio/allure-reporter';
-import { app, mobileRoot } from '../../config/app.js';
+import { $, expect } from '@wdio/globals';
+import { app } from '../../config/app.js';
 import { BasePage } from './BasePage.js';
 
 class CompletePage extends BasePage {
@@ -14,15 +11,7 @@ class CompletePage extends BasePage {
   }
 
   async captureConfirmation(): Promise<void> {
-    try {
-      const screenshot = Buffer.from(await browser.takeScreenshot(), 'base64');
-      const directory = resolve(mobileRoot, 'artifacts');
-      await mkdir(directory, { recursive: true });
-      await writeFile(resolve(directory, 'purchase-confirmation.png'), screenshot);
-      allure.addAttachment('purchase-confirmation.png', screenshot, 'image/png');
-    } catch (error) {
-      console.warn('No se pudo recoger la captura de confirmación:', error);
-    }
+    await this.captureEvidence('purchase-confirmation');
   }
   async continueShopping(): Promise<void> { await this.tap(await this.continueShoppingButton); }
 }

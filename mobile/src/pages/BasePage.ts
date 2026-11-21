@@ -1,4 +1,9 @@
 import { $, browser } from '@wdio/globals';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import allure from '@wdio/allure-reporter';
+import { mobileRoot } from '../../config/app.js';
 
 export class BasePage {
   get cartButton() {
@@ -25,4 +30,16 @@ export class BasePage {
   }
 
   async openCart(): Promise<void> { await this.tap(await this.cartButton); }
+
+  protected async captureEvidence(name: string): Promise<void> {
+    try {
+      const screenshot = Buffer.from(await browser.takeScreenshot(), 'base64');
+      const directory = resolve(mobileRoot, 'artifacts');
+      await mkdir(directory, { recursive: true });
+      await writeFile(resolve(directory, `${name}-${randomUUID()}.png`), screenshot);
+      allure.addAttachment(`${name}.png`, screenshot, 'image/png');
+    } catch (error) {
+      console.warn(`No se pudo recoger la captura ${name}:`, error instanceof Error ? error.message : String(error));
+    }
+  }
 }

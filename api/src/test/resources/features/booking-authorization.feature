@@ -20,6 +20,7 @@ Feature: Protección de reservas ante operaciones sin autorización
     And match response.booking == booking
     * configure cookies = null
 
+  @smoke
   Scenario Outline: API-04: rechaza PUT con <authorization> y conserva la reserva original
     * copy attemptedBooking = booking
     * set attemptedBooking.lastname = 'UnauthorizedUpdate'
@@ -42,6 +43,7 @@ Feature: Protección de reservas ante operaciones sin autorización
       | sin token      | {}                                     |
       | token inválido | { Cookie: 'token=invalid-api-token' }   |
 
+  @smoke
   Scenario Outline: API-05: rechaza DELETE con <authorization> y mantiene la reserva disponible
     Given path 'booking', bookingId
     And headers <requestHeaders>

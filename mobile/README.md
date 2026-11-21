@@ -170,13 +170,13 @@ El flujo seleccionado es Catálogo → Detalle → Carrito → Login de demo →
 | ID | Escenario / resultado esperado | Prioridad | Técnica | Automatizado |
 | --- | --- | --- | --- | --- |
 | MOB-01 | Compra conserva producto, cantidad e importes, confirma el pedido y deja el carrito vacío al continuar comprando | P0 | Transición de estados y partición válida | Sí |
-| MOB-02 | Aumentar de 1 a 2 y reducir a 1 actualiza el importe sin cambiar el precio unitario | P1 | Transición de estados y cálculo independiente | Sí |
-| MOB-03 | Eliminar el único producto muestra el carrito vacío | P1 | Transición de estados: con producto → vacío | Sí |
+| MOB-02 | Aumentar de 1 a 2 y reducir a 1 actualiza el importe sin cambiar el precio unitario | P1 | Transición de estados | Sí |
+| MOB-03 | Eliminar el único producto muestra el mensaje de carrito vacío y deja cero productos | P1 | Transición de estados: con producto → vacío | Sí |
 | MOB-04 | Nombre de envío vacío impide avanzar y muestra el error correspondiente, con el resto de datos válidos | P1 | Partición de equivalencia inválida | Sí |
 | MOB-05 | Compra con otros productos, incluido Bolt T-Shirt, conserva la cantidad elegida | P1 | Partición de equivalencia por producto | No |
 | MOB-06 | Cantidad cero en detalle deshabilita agregar al carrito | P2 | Valor límite inferior y transición de estado | No |
 
-MOB-01 concentra el mayor riesgo de negocio e incluye verificaciones distintas para producto, precio, envío, total y cierre del carrito. MOB-02 añade cambios de cantidad que el caso de una unidad no cubre. MOB-03 valida la eliminación y MOB-04 atribuye el rechazo a un único dato inválido. Los cuatro casos se preparan de forma independiente.
+MOB-01 concentra el mayor riesgo de negocio e incluye verificaciones distintas para producto, precio, envío, total y cierre del carrito. MOB-02 añade cambios de cantidad que el caso de una unidad no cubre; el cálculo independiente del importe es el oráculo de esas transiciones. MOB-03 valida la eliminación y MOB-04 atribuye el rechazo a un único dato inválido. Los cuatro casos se preparan de forma independiente.
 
 No se presenta Data Driven Testing ni análisis exhaustivo de valores límite como implementados. Se automatiza la partición vacía del nombre; otros campos obligatorios, formatos y longitudes quedan para ampliar después de definir sus reglas.
 
@@ -205,7 +205,7 @@ Los nombres de los escenarios conservan los IDs para relacionar diseño, código
 | Login y datos de checkout | R-MOB-01 | MOB-01 | [checkout.steps.ts](src/steps/checkout.steps.ts) → [LoginPage](src/pages/LoginPage.ts), [ShippingPage](src/pages/ShippingPage.ts) y [PaymentPage](src/pages/PaymentPage.ts) | Cuenta de demo, envío y pago ficticio permiten llegar al resumen |
 | Confirmación y carrito vacío | R-MOB-01 / R-MOB-03 | MOB-01 | [purchase.feature](src/features/purchase.feature) → [purchase.steps.ts](src/steps/purchase.steps.ts) | Confirmación visible, captura y carrito vacío tras continuar |
 | Modificar cantidades | R-MOB-02 | MOB-02 | [cart.feature](src/features/cart.feature) → [CartPage](src/pages/CartPage.ts) | Cantidades 1 → 2 → 1 e importes esperados |
-| Eliminar producto | R-MOB-03 | MOB-03 | [cart.feature](src/features/cart.feature) | Carrito vacío tras eliminar |
+| Eliminar producto | R-MOB-03 | MOB-03 | [cart.feature](src/features/cart.feature) → [CartPage](src/pages/CartPage.ts) | Mensaje de carrito vacío y cero productos tras eliminar |
 | Nombre obligatorio | R-MOB-04 | MOB-04 | [checkout.feature](src/features/checkout.feature) → [ShippingPage](src/pages/ShippingPage.ts) | Error específico de nombre obligatorio |
 | Aislamiento | R-MOB-05 | MOB-01 a MOB-04 | [cucumber.hooks.ts](src/hooks/cucumber.hooks.ts) y [purchase.data.ts](src/data/purchase.data.ts) | Datos de app limpios, Pages sin estado mutable y datos nuevos al solicitarlos |
 | Otros productos y cantidad cero | R-MOB-02 | MOB-05 / MOB-06 | No automatizados | Cobertura pendiente indicada en diseño |
@@ -233,9 +233,19 @@ pnpm run report:open
 
 El primer comando genera HTML en `allure-report/`; el segundo lo sirve y abre en el navegador. Java 21 debe estar disponible. También se generan resultados Allure en `allure-results/` y XML JUnit en `reports/junit/`.
 
-MOB-01 captura la confirmación incluso si la compra pasa. En fallos se recogen screenshot, jerarquía XML, logcat y video MP4; la grabación de escenarios correctos se descarta. Los adjuntos se conservan en `artifacts/` y se vinculan al reporte. Un error al recoger evidencia se informa sin reemplazar el fallo original del test.
+MOB-01 adjunta tres capturas a los pasos correspondientes de Allure, incluso cuando pasa:
 
-Los reportes completos, APK, cachés y artefactos están excluidos de Git. Revisar los adjuntos antes de compartirlos; las pantallas pueden mostrar los datos de demostración que ofrece la aplicación. La [captura de confirmación](evidence/purchase-confirmation.png) se conserva como evidencia selectiva del flujo validado.
+| Momento | Adjunto | Verificaciones relacionadas |
+| --- | --- | --- |
+| Carrito, antes de iniciar checkout | `cart-before-checkout.png` | Producto, cantidad, precio unitario y total |
+| Resumen, antes de confirmar | `order-review.png` | Producto, destinatario, envío y total del pedido |
+| Pedido confirmado | `purchase-confirmation.png` | Mensaje de confirmación de compra |
+
+La captura del carrito también se recoge al iniciar el checkout de MOB-04. `BasePage.captureEvidence()` comparte la captura y el adjunto entre Pages; los steps continúan utilizando únicamente Pages. Los PNG originales se guardan en `artifacts/` con un identificador único para que un escenario no sobrescriba la evidencia de otro. Las capturas documentan el estado; las aserciones verifican los resultados.
+
+En fallos se recogen screenshot, jerarquía XML, logcat y video MP4; la grabación de escenarios correctos se descarta. Los adjuntos se vinculan al reporte. Un error al recoger evidencia se informa sin reemplazar el fallo original del test. Cada ejecución limpia los resultados anteriores: conserva o copia los artefactos que necesites antes de volver a ejecutar.
+
+Los reportes completos, APK, cachés y artefactos están excluidos de Git. Revisar los adjuntos antes de compartirlos; las pantallas pueden mostrar los datos de demostración que ofrece la aplicación. En `evidence/` se conservan capturas seleccionadas del [carrito](evidence/cart-before-checkout.png), [resumen](evidence/order-review.png) y [confirmación](evidence/purchase-confirmation.png) del flujo validado.
 
 La regresión local de los cuatro escenarios pasó en Android 14 / API 34 ARM64, en un único worker y sin reintentos. Allure y JUnit registran los cuatro casos; el reporter de consola también muestra el conteo de steps. Esta validación no sustituye la ejecución Linux de GitHub Actions ni una matriz de dispositivos.
 
@@ -252,11 +262,13 @@ El [workflow Mobile](../.github/workflows/mobile.yml) prepara Node, pnpm, Java y
 
 Para la ejecución manual, publicar el workflow en la rama predeterminada y abrir **Actions → Mobile - Appium → Run workflow**. Se admiten `@purchase`, `@cart`, `@checkout`, `@smoke` o `@regression`. La entrada se transmite por variable de entorno y el runner la valida; no se interpola directamente en un comando de shell.
 
-El HTML y los artefactos se publican también cuando las pruebas fallan y se conservan siete días. Esta configuración no acredita una ejecución remota: después de publicar, comprobar el PR, el merge y una ejecución manual, descargar sus artefactos y verificar el resultado de esta misma versión. El horario se activa en la rama predeterminada y puede iniciarse con retraso.
+El HTML y los artefactos se publican también cuando las pruebas fallan y se conservan siete días. La [regresión remota correcta](https://github.com/Ronaldoa1698/reto-ligo/actions/runs/44926013011) corresponde al commit `b4405031011f660d4a773490f2ee96332a9a16e9`. Las nuevas capturas y la verificación de cero productos requieren una nueva ejecución tras publicar estos cambios. Conserva el artefacto de la entrega antes de que expire. El horario se activa en la rama predeterminada y puede iniciarse con retraso.
 
 ### Reporte Allure mediante un enlace
 
 El workflow [Mobile - Allure Report](../.github/workflows/mobile-report.yml) publica el HTML en GitHub Pages después de que termina `Mobile - Appium`. El reporte y sus adjuntos se abren directamente en el navegador, sin descargar artefactos ni ejecutar Allure localmente. Se publica el reporte generado tanto si las pruebas pasan como si fallan; el resultado del CI de pruebas conserva su estado original.
+
+Reporte público del repositorio: [abrir Allure Mobile](https://ronaldoa1698.github.io/reto-ligo/). El enlace muestra la última ejecución publicada; las nuevas evidencias aparecerán después de integrar y ejecutar estos cambios en CI.
 
 Preparación inicial:
 
@@ -271,6 +283,6 @@ La publicación utiliza únicamente el HTML generado y sus adjuntos de Allure, s
 
 ## Decisiones y presentación
 
-La demostración del reto debe mostrar un feature, su step, el Page y el locator; explicar el reset de datos, los importes independientes, la cuenta de demo y una exclusión. Mostrar la compra, la captura y el reporte. Como siguientes mejoras: ampliar productos, límites y negativos; validar otra versión Android y un dispositivo físico; medir estabilidad y duración antes de introducir paralelismo. El video global de 10–15 minutos debe integrar Web, API y Mobile y queda como entregable de presentación.
+La demostración del reto debe mostrar un feature, su step, el Page y el locator; explicar el reset de datos, los importes independientes, la cuenta de demo y una exclusión. Mostrar la compra, las tres capturas y el reporte. Como siguientes mejoras: ampliar productos, límites y negativos; validar otra versión Android y un dispositivo físico; medir estabilidad y duración antes de introducir paralelismo. El video global de 10–15 minutos debe integrar Web, API y Mobile y queda como entregable de presentación.
 
 Referencias: [Appium](https://appium.io/docs/en/3.2/), [UiAutomator2](https://appium.github.io/appium-uiautomator2-driver/), [WebdriverIO](https://webdriver.io/docs/gettingstarted), [Android por línea de comandos](https://developer.android.com/studio/run/emulator-commandline).
