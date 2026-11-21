@@ -8,3 +8,10 @@ web/test-results/
 web/reports/
 web/.features-gen/**/*.spec.js
 api/target/
+mobile/.cache/
+mobile/apps/**/*.apk
+mobile/reports/
+mobile/allure-results/
+mobile/allure-report/
+mobile/artifacts/
+mobile/logs/

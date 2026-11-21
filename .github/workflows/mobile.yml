@@ -1,0 +1,92 @@
+name: Mobile - Appium
+
+on:
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile.yml'
+  push:
+    branches: [main, master]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile.yml'
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag a ejecutar, incluyendo @ (ej.: @purchase, @cart o @checkout)'
+        required: true
+        default: '@regression'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      TEST_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event_name == 'pull_request' && '@smoke' || '@regression' }}
+      ANDROID_PLATFORM_VERSION: '14'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: mobile/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: mobile/.nvmrc
+          cache: pnpm
+          cache-dependency-path: mobile/pnpm-lock.yaml
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check TypeScript and feature definitions
+        run: |
+          pnpm run typecheck
+          pnpm run features:check
+      - name: Download the pinned APK
+        run: pnpm run app:download
+      - name: Install the pinned Android driver
+        run: pnpm run driver:install
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run selected Android scenarios
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          cores: 2
+          ram-size: 2048M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: pnpm --dir mobile run android
+      - name: Generate HTML report
+        if: ${{ always() && !cancelled() && hashFiles('mobile/allure-results/*-result.json') != '' }}
+        run: pnpm run report
+      - name: Upload reports and evidence
+        if: ${{ always() && !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-appium-${{ github.run_attempt }}
+          path: |
+            mobile/allure-report/
+            mobile/allure-results/
+            mobile/reports/
+            mobile/artifacts/
+            mobile/logs/
+          retention-days: 7
+          if-no-files-found: ignore
