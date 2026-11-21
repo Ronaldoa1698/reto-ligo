@@ -14,4 +14,4 @@ Para preparar las variables de entorno y ejecutar las pruebas API, consulta [api
 
 Para preparar Android sin Android Studio y ejecutar Appium desde VS Code, consulta [mobile/README.md](mobile/README.md).
 
-Las capturas de confirmación se conservan en [web/evidence](web/evidence/purchase-confirmation.png) y [mobile/evidence](mobile/evidence/purchase-confirmation.png). El video global del reto sigue pendiente.
+Las capturas de confirmación se conservan en [web/evidence](web/evidence/purchase-confirmation.png) y [mobile/evidence](mobile/evidence/purchase-confirmation.png).
