@@ -281,8 +281,8 @@ El enlace aparece en **Actions → Mobile - Allure Report → ejecución → Sum
 
 La publicación utiliza únicamente el HTML generado y sus adjuntos de Allure, sin ejecutar código del PR. Solo publica ejecuciones originadas en este mismo repositorio público; los forks quedan excluidos. Los workflows de pruebas mantienen sus permisos de lectura y el workflow de publicación dispone de los permisos de Pages. Consulta la [configuración oficial de GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 
-## Decisiones y presentación
+## Siguientes mejoras
 
-La demostración del reto debe mostrar un feature, su step, el Page y el locator; explicar el reset de datos, los importes independientes, la cuenta de demo y una exclusión. Mostrar la compra, las tres capturas y el reporte. Como siguientes mejoras: ampliar productos, límites y negativos; validar otra versión Android y un dispositivo físico; medir estabilidad y duración antes de introducir paralelismo. El video global de 10–15 minutos debe integrar Web, API y Mobile y queda como entregable de presentación.
+Ampliar productos, límites y negativos; validar otra versión Android y un dispositivo físico; medir estabilidad y duración antes de introducir paralelismo.
 
 Referencias: [Appium](https://appium.io/docs/en/3.2/), [UiAutomator2](https://appium.github.io/appium-uiautomator2-driver/), [WebdriverIO](https://webdriver.io/docs/gettingstarted), [Android por línea de comandos](https://developer.android.com/studio/run/emulator-commandline).
