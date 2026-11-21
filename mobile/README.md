@@ -254,6 +254,21 @@ Para la ejecución manual, publicar el workflow en la rama predeterminada y abri
 
 El HTML y los artefactos se publican también cuando las pruebas fallan y se conservan siete días. Esta configuración no acredita una ejecución remota: después de publicar, comprobar el PR, el merge y una ejecución manual, descargar sus artefactos y verificar el resultado de esta misma versión. El horario se activa en la rama predeterminada y puede iniciarse con retraso.
 
+### Reporte Allure mediante un enlace
+
+El workflow [Mobile - Allure Report](../.github/workflows/mobile-report.yml) publica el HTML en GitHub Pages después de que termina `Mobile - Appium`. El reporte y sus adjuntos se abren directamente en el navegador, sin descargar artefactos ni ejecutar Allure localmente. Se publica el reporte generado tanto si las pruebas pasan como si fallan; el resultado del CI de pruebas conserva su estado original.
+
+Preparación inicial:
+
+1. Utilizar un repositorio público para que GitHub Pages esté disponible con GitHub Free.
+2. Incorporar `mobile-report.yml` a la rama predeterminada (`main`), requisito de los eventos `workflow_run`.
+3. En **Settings → Pages → Build and deployment → Source**, seleccionar **GitHub Actions**. El entorno `github-pages` debe permitir desplegar desde `main`.
+4. Ejecutar nuevamente Mobile. Al terminar, se inicia automáticamente `Mobile - Allure Report`.
+
+El enlace aparece en **Actions → Mobile - Allure Report → ejecución → Summary**, bajo **Abrir el último reporte publicado**, y también en el despliegue del entorno `github-pages`. El sitio muestra el último reporte publicado y se reemplaza en cada publicación; para consultar una ejecución anterior se conserva su artefacto descargable durante siete días. Si no se generó HTML, el sitio conserva el reporte anterior y el resumen lo indica.
+
+La publicación utiliza únicamente el HTML generado y sus adjuntos de Allure, sin ejecutar código del PR. Solo publica ejecuciones originadas en este mismo repositorio público; los forks quedan excluidos. Los workflows de pruebas mantienen sus permisos de lectura y el workflow de publicación dispone de los permisos de Pages. Consulta la [configuración oficial de GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
 ## Decisiones y presentación
 
 La demostración del reto debe mostrar un feature, su step, el Page y el locator; explicar el reset de datos, los importes independientes, la cuenta de demo y una exclusión. Mostrar la compra, la captura y el reporte. Como siguientes mejoras: ampliar productos, límites y negativos; validar otra versión Android y un dispositivo físico; medir estabilidad y duración antes de introducir paralelismo. El video global de 10–15 minutos debe integrar Web, API y Mobile y queda como entregable de presentación.
