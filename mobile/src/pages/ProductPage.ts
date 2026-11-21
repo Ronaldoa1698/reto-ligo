@@ -11,6 +11,7 @@ class ProductPage extends BasePage {
 
   async expectProduct(product: PurchaseData['product']): Promise<void> {
     await expect(this.productName).toHaveText(product.name);
+    await this.scrollTo(await this.price);
     await expect(this.price).toHaveText(moneyPattern(product.priceCents));
   }
 

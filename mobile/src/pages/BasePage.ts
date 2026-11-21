@@ -7,7 +7,7 @@ export class BasePage {
 
   protected async scrollTo(element: WebdriverIO.Element, direction: 'up' | 'down' = 'up'): Promise<WebdriverIO.Element> {
     if (!await element.isDisplayed()) {
-      await element.scrollIntoView({ direction, maxScrolls: 5 });
+      await element.scrollIntoView({ direction, maxScrolls: 5, percent: 0.7 });
     }
     await element.waitForDisplayed();
     return element;
