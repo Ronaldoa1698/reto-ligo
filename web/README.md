@@ -280,7 +280,7 @@ Los reportes y evidencias disponibles se suben incluso si los tests fallan y se 
 
 La [regresión nocturna correcta](https://github.com/Ronaldoa1698/reto-ligo/actions/runs/44920750246) corresponde al commit `b162626c8c65ecaf7fe779447f67df4aded1ee18` e incluye las nueve ejecuciones. Actions vincula el resultado, el commit y sus artefactos. Los cambios posteriores requieren su propia ejecución para acreditar esa versión.
 
-## Decisiones técnicas para la presentación
+## Decisiones técnicas
 
 - **BDD:** los escenarios mantienen ejemplos de negocio e IDs trazables. playwright-bdd permite conservar el runner, las fixtures y las evidencias de Playwright. El costo asumido es mantener los pasos y generar los tests; `bddgen` falla si falta una implementación.
 - **POM y localizadores separados:** las acciones y verificaciones de una pantalla viven en su Page; el cambio de un selector se concentra en `locators/`. Los steps se mantienen centrados en el comportamiento y los datos.
@@ -289,16 +289,3 @@ La [regresión nocturna correcta](https://github.com/Ronaldoa1698/reto-ligo/acti
 - **Confiabilidad:** localizadores específicos, esperas automáticas, aserciones que reintentan y concurrencia limitada. Ante un fallo se revisan trace, screenshot y logs para distinguir defecto de producto, fallo del test e indisponibilidad del servicio. Un reintento exitoso en CI sigue marcándose como flaky y falla la suite.
 - **Escalabilidad:** añadir Pages y fixtures por capacidad, nuevos features y tags; aumentar workers o introducir sharding solo tras verificar aislamiento y capacidad del entorno. Extraer componentes compartidos cuando exista reutilización real.
 - **V2:** compra de varios productos, más datos de checkout con reglas acordadas, navegadores adicionales, accesibilidad de los flujos críticos y seguimiento histórico de fallos intermitentes.
-
-## Guía para el video del reto
-
-El PDF pide un video global de 10–15 minutos para Web, API y Mobile. Para la sección Web, mostrar:
-
-1. Los riesgos P0/P1, los casos elegidos y una exclusión justificada.
-2. Un feature y su relación con steps, fixtures, Pages y locators.
-3. La compra y un ejemplo negativo de checkout; explicar que cada ejemplo se prepara de forma independiente.
-4. La captura de confirmación, el reporte y cómo abrir un trace.
-5. El workflow de PR, push, nightly y ejecución manual por tag; identificar el commit y los artefactos de la ejecución mostrada.
-6. La estrategia de datos, el control de flaky tests y una mejora V2.
-
-Para mostrar la secuencia de compra con controles de avance manual, usar `pnpm run test:debug --grep WEB-PURCHASE-01`. La grabación de la presentación global queda pendiente de realizar junto con las otras dos capas; los traces y la captura son evidencias de ejecución, no sustituyen esa explicación.
