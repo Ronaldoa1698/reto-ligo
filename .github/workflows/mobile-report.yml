@@ -1,0 +1,99 @@
+name: Mobile - Allure Report
+
+on:
+  workflow_run:
+    workflows: ['Mobile - Appium']
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-allure-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event.repository.private == false &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Find the report artifact for this attempt
+        id: artifact
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const name = `mobile-appium-${run.run_attempt}`;
+            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+              ...context.repo,
+              run_id: run.id,
+              per_page: 100,
+            });
+            const artifact = data.artifacts.find(item => item.name === name && !item.expired);
+            core.setOutput('id', artifact?.id ?? '');
+            if (!artifact) {
+              await core.summary
+                .addHeading('Allure - Mobile')
+                .addRaw('Esta ejecución no generó un artefacto de reporte. El sitio conserva el último reporte publicado.')
+                .write();
+            }
+      - name: Download the generated report
+        if: steps.artifact.outputs.id != ''
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.artifact.outputs.id }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: _mobile-report
+          merge-multiple: true
+      - name: Check the HTML report
+        if: steps.artifact.outputs.id != ''
+        id: report
+        shell: bash
+        run: |
+          if [ -f _mobile-report/allure-report/index.html ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo 'El artefacto no contiene un reporte HTML; se conserva el último reporte publicado.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Configure GitHub Pages
+        if: steps.report.outputs.ready == 'true'
+        uses: actions/configure-pages@v6
+      - name: Upload the Allure website
+        if: steps.report.outputs.ready == 'true'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _mobile-report/allure-report
+      - name: Publish the Allure website
+        if: steps.report.outputs.ready == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v5
+      - name: Add the report link to the summary
+        if: steps.report.outputs.ready == 'true'
+        uses: actions/github-script@v9
+        env:
+          REPORT_URL: ${{ steps.deployment.outputs.page_url }}
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            await core.summary
+              .addHeading('Allure - Mobile')
+              .addLink('Abrir el último reporte publicado', process.env.REPORT_URL)
+              .addBreak()
+              .addLink(`Ejecución de pruebas ${run.id}, intento ${run.run_attempt}`, run.html_url)
+              .addBreak()
+              .addRaw(`Resultado del CI: ${run.conclusion}. El enlace se actualiza con cada publicación.`)
+              .write();

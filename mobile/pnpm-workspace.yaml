@@ -1,0 +1,6 @@
+allowBuilds:
+  appium: true
+  ffmpeg-static: true
+  esbuild: true
+  edgedriver: false
+  geckodriver: false
