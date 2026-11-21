@@ -27,8 +27,16 @@ class CartPage extends BasePage {
   async increaseQuantity(): Promise<void> { await this.tap(await this.increaseButton); }
   async decreaseQuantity(): Promise<void> { await this.tap(await this.decreaseButton); }
   async removeProduct(): Promise<void> { await this.tap(await this.removeButton); }
-  async proceedToCheckout(): Promise<void> { await this.tap(await this.checkoutButton); }
-  async expectEmpty(): Promise<void> { await expect(this.emptyMessage).toBeDisplayed(); }
+  async proceedToCheckout(): Promise<void> {
+    const button = await this.scrollTo(await this.checkoutButton);
+    await this.captureEvidence('cart-before-checkout');
+    await button.click();
+  }
+
+  async expectEmpty(): Promise<void> {
+    await expect(this.emptyMessage).toBeDisplayed();
+    await expect(this.products).toBeElementsArrayOfSize(0);
+  }
 }
 
 export default new CartPage();

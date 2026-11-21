@@ -39,12 +39,14 @@ Feature: Ciclo de vida de una reserva
     And request updatedBooking
     When method put
     Then status 200
+    And match header Content-Type contains 'application/json'
     And match response == bookingSchema
     And match response == updatedBooking
 
     Given path 'booking', bookingId
     When method get
     Then status 200
+    And match header Content-Type contains 'application/json'
     And match response == updatedBooking
 
     Given path 'booking', bookingId

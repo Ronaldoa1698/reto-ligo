@@ -23,6 +23,7 @@ class ReviewPage extends BasePage {
     await this.scrollTo(await this.delivery);
     await expect(this.delivery).toHaveText(moneyPattern(data.deliveryCents));
     await expect(this.total).toHaveText(moneyPattern(data.product.priceCents + data.deliveryCents));
+    await this.captureEvidence('order-review');
   }
 
   async placeOrder(): Promise<void> { await this.tap(await this.placeOrderButton); }
