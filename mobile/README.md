@@ -241,7 +241,9 @@ La regresión local de los cuatro escenarios pasó en Android 14 / API 34 ARM64,
 
 ## GitHub Actions
 
-El [workflow Mobile](../.github/workflows/mobile.yml) prepara Node, pnpm, Java y un emulador Android 14 x86_64 con KVM. Descarga el mismo APK con checksum, instala el driver fijado y ejecuta las verificaciones previas antes de iniciar las pruebas.
+El [workflow Mobile](../.github/workflows/mobile.yml) prepara Node, pnpm, Java y un emulador Android 14 AOSP (`target: default`) x86_64 con KVM, 3 GB de RAM, resolución 720×1280 y densidad 240 dpi para conservar espacio útil en pantalla. Descarga el mismo APK con checksum, instala el driver fijado y ejecuta las verificaciones previas antes de iniciar las pruebas. El entorno local puede continuar usando la imagen Google APIs descrita en la preparación.
+
+La ejecución CI `44920718801` falló antes del escenario porque un diálogo de sistema, `Pixel Launcher isn't responding`, cubrió el catálogo; la captura y el XML del artefacto confirmaron ese estado. Se selecciona la imagen AOSP para evitar ese launcher y los servicios de Google, y se reduce la resolución y amplía la RAM para disminuir la presión del emulador. El flujo seleccionado utiliza el catálogo local y pago simulado. Se conservan las verificaciones y sus tiempos de espera, sin cerrar automáticamente diálogos de ANR ni reintentar el escenario. Esta configuración debe validarse en una nueva ejecución de GitHub Actions.
 
 | Evento | Selección | Justificación |
 | --- | --- | --- |
